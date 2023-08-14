@@ -1,3 +1,4 @@
+import fileSaver from 'file-saver';
 import heic2any from 'heic2any';
 import { Show, createSignal } from 'solid-js'
 import { fabric } from 'fabric';
@@ -5,7 +6,7 @@ import './App.css'
 
 function App() {
     const [loading, setLoading] = createSignal(false);
-    const [downloading, setDownloading] = createSignal(false);
+    const [downloading, setDownloading] = createSignal(true);
     let canvasRef: HTMLCanvasElement | undefined;
     let canvas: fabric.Canvas = new fabric.Canvas('canvas');
     let ksignature: fabric.Image = new fabric.Image("p");
@@ -68,48 +69,49 @@ function App() {
     };
 
     const handSignatureChanged = (evt: Event) => {
-        const target = evt.target as HTMLInputElement;
-        const file = target?.files?.[0];
-        if (file) {
-            const blobURL = URL.createObjectURL(file);
-            fabric.Image.fromURL(blobURL, (img) => {
-                if (img.width && img.height && canvas.width && canvas.height) {
-                    const ratio = calculateRatio(img.width, img.height, canvas.width, canvas.height) * 0.45;
-                    const x = canvas.width / 2 - img.width / 2 * ratio;
-                    const y = canvas.height / 2 - img.height / 2 * ratio;
-                    img.set("top", x);
-                    img.set("left", y);
-                    img.set("scaleX", ratio);
-                    img.set("scaleY", ratio);
-                    if (ksignature) {
-                        canvas.remove(ksignature);
+        try {
+            const target = evt.target as HTMLInputElement;
+            const file = target?.files?.[0];
+            if (file) {
+                const blobURL = URL.createObjectURL(file);
+                fabric.Image.fromURL(blobURL, (img) => {
+                    if (img.width && img.height && canvas.width && canvas.height) {
+                        const ratio = calculateRatio(img.width, img.height, canvas.width, canvas.height) * 0.6;
+                        const x = canvas.width / 2 - img.width / 2 * ratio;
+                        const y = canvas.height - img.height * ratio;
+                        img.set("top", y);
+                        img.set("left", x);
+                        img.set("scaleX", ratio);
+                        img.set("scaleY", ratio);
+                        if (ksignature) {
+                            canvas.remove(ksignature);
+                        }
+                        ksignature = img;
+                        canvas.add(img)
+                            .bringToFront(img)
+                            .requestRenderAll();
                     }
-                    ksignature = img;
-                    canvas.add(img)
-                        .bringToFront(img)
-                        .requestRenderAll();
-                }
-            });
+                });
+            }
+        } catch(e) {
+            alert("Lỗi " + JSON.stringify(e));
         }
     };
 
-    const downloadURI = (uri: string, name: string) => {
-        const link = document.createElement("a");
-        link.download = name;
-        link.href = uri;
-        link.target = "_blank";
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+    const downloadURI = async (uri: string, name: string) => {
+        setDownloading(true);
+        const blob = await fetch(uri).then(r => r.blob());
+        fileSaver(blob, name);
+        setLoading(false);
     }
 
     const handleDownload = () => {
         setDownloading(true);
-        setTimeout(() => {
+        setTimeout(async() => {
             canvas.discardActiveObject();
             canvas.requestRenderAll();
             const url = canvas.toDataURL({ format: "jpeg", quality: 1, multiplier: kimage.width! / canvas.width! });
-            downloadURI(url, "chuky.jpeg");
+            await downloadURI(url, "chuky.jpeg");
             setDownloading(false);
         }, 0);
     }
@@ -136,9 +138,9 @@ function App() {
                         <label class="btn btn-primary p-2" for="signature">Chọn chữ ký</label>
                         <input accept="image/*" class="d-none" id="signature" type="file" onChange={(e) => handSignatureChanged(e)} />
                     </span>
-                    <button disabled={downloading()} class="btn btn-primary p-2 loading" onClick={handleDownload}>
+                    <button disabled={downloading()} class="btn btn-primary p-2" onClick={handleDownload}>
                         <Show when={downloading()}>
-                            <div class="spinner-border text-primary" role="status">
+                            <div style="height: 25px; width: 25px" class="spinner-border text-default" role="status">
                                 <span class="visually-hidden">Loading...</span>
                             </div>
                         </Show>
