@@ -6,7 +6,7 @@ import './App.css'
 
 function App() {
     const [loading, setLoading] = createSignal(false);
-    const [downloading, setDownloading] = createSignal(true);
+    const [downloading, setDownloading] = createSignal(false);
     let canvasRef: HTMLCanvasElement | undefined;
     let canvas: fabric.Canvas = new fabric.Canvas('canvas');
     let ksignature: fabric.Image = new fabric.Image("p");
