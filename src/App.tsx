@@ -1,21 +1,7 @@
 import heic2any from 'heic2any';
-import { Show, createMemo, createSignal } from 'solid-js'
+import { Show, createSignal } from 'solid-js'
 import { fabric } from 'fabric';
 import './App.css'
-
-function fileToUrl(f: File): Promise<string> {
-    const freader = new FileReader()
-    return new Promise((resole, reject) => {
-        freader.addEventListener("load", () => {
-            if (typeof freader.result === "string")
-                resole(freader.result);
-        });
-        freader.addEventListener("error", () => {
-            reject(freader.error);
-        });
-        freader.readAsDataURL(f);
-    });
-}
 
 function App() {
     const [loading, setLoading] = createSignal(false);
@@ -56,11 +42,12 @@ function App() {
             if (file.name.endsWith(".heic")) {
                 const blobRes = await fetch(blobURL)
                 const blob = await blobRes.blob()
-                url = URL.createObjectURL(await heic2any({ blob }));
+                const hblob = await heic2any({ blob });
+                url = URL.createObjectURL(hblob as Blob);
             }
             fabric.Image.fromURL(url, (img) => {
-                resizeCanvas(img.width, img.height);
                 if (img.width && img.height && canvas.width && canvas.height) {
+                    resizeCanvas(img.width, img.height);
                     const ratio = calculateRatio(img.width!, img.height!, canvas.width!, canvas.height!);
                     img.set("top", 0);
                     img.set("left", 0);
