@@ -17,3 +17,22 @@ body #root {
   justify-content: space-between;
   width: 100%;
 }
+
+.download-area {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 10;
+  height: 100vh;
+  width: 100vw;
+  margin: 0 auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(90, 90, 90, 0.8);
+}
+
+.download-area img {
+  height: 90%;
+  width: auto;
+}

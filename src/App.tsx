@@ -2,11 +2,32 @@ import fileSaver from 'file-saver';
 import heic2any from 'heic2any';
 import { Show, createSignal } from 'solid-js'
 import { fabric } from 'fabric';
-import './App.css'
+import './App.css';
+
+const b64toBlob = (b64Data, sliceSize=512) => {
+  const byteCharacters = atob(b64Data);
+  const byteArrays = [];
+
+  for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+    const slice = byteCharacters.slice(offset, offset + sliceSize);
+
+    const byteNumbers = new Array(slice.length);
+    for (let i = 0; i < slice.length; i++) {
+      byteNumbers[i] = slice.charCodeAt(i);
+    }
+
+    const byteArray = new Uint8Array(byteNumbers);
+    byteArrays.push(byteArray);
+  }
+
+  const blob = new Blob(byteArrays, {type: 'image/png'});
+  return blob;
+}
 
 function App() {
     const [loading, setLoading] = createSignal(false);
     const [downloading, setDownloading] = createSignal(false);
+    const [displayImg, setDisplayImg] =  createSignal<null|string>(null);
     let canvasRef: HTMLCanvasElement | undefined;
     let canvas: fabric.Canvas = new fabric.Canvas('canvas');
     let ksignature: fabric.Image = new fabric.Image("p");
@@ -49,7 +70,7 @@ function App() {
             fabric.Image.fromURL(url, (img) => {
                 if (img.width && img.height && canvas.width && canvas.height) {
                     resizeCanvas(img.width, img.height);
-                    const ratio = calculateRatio(img.width!, img.height!, canvas.width!, canvas.height!);
+                    const ratio = calculateRatio(img.width, img.height, canvas.width!, canvas.height!);
                     img.set("top", 0);
                     img.set("left", 0);
                     img.set("scaleX", ratio);
@@ -107,11 +128,13 @@ function App() {
 
     const handleDownload = () => {
         setDownloading(true);
-        setTimeout(async() => {
-            canvas.discardActiveObject();
-            canvas.requestRenderAll();
-            const url = canvas.toDataURL({ format: "jpeg", quality: 1, multiplier: kimage.width! / canvas.width! });
-            await downloadURI(url, "chuky.jpeg");
+        setTimeout(async () => {
+            const url = canvas.toDataURL({
+                format: "jpeg",
+                multiplier: kimage.width! / canvas.width!,
+            });
+            const blob = await fetch(url).then(r => r.blob());
+            setDisplayImg(URL.createObjectURL(blob));
             setDownloading(false);
         }, 0);
     }
@@ -138,18 +161,23 @@ function App() {
                         <label class="btn btn-primary p-2" for="signature">Chọn chữ ký</label>
                         <input accept="image/*" class="d-none" id="signature" type="file" onChange={(e) => handSignatureChanged(e)} />
                     </span>
-                    <button disabled={downloading()} class="btn btn-primary p-2" onClick={handleDownload}>
+                    <a href="#" disabled={downloading()} class="btn btn-primary p-2" onClick={handleDownload}>
                         <Show when={downloading()}>
                             <div style="height: 25px; width: 25px" class="spinner-border text-default" role="status">
                                 <span class="visually-hidden">Loading...</span>
                             </div>
                         </Show>
                         <Show when={!downloading()}>
-                            Tải ảnh
+                            Tạo ảnh
                         </Show>
-                    </button>
+                    </a>
                 </div>
             </div>
+            <Show when={displayImg() !== null}>
+                <div class="download-area">
+                    <img src={displayImg()} alt="anh" aria-title="chuky.jpeg" />
+                </div>
+            </Show>
         </>
     )
 }
