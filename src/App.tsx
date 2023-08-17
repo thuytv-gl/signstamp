@@ -1,33 +1,12 @@
-import fileSaver from 'file-saver';
 import heic2any from 'heic2any';
 import { Show, createSignal } from 'solid-js'
 import { fabric } from 'fabric';
 import './App.css';
 
-const b64toBlob = (b64Data, sliceSize=512) => {
-  const byteCharacters = atob(b64Data);
-  const byteArrays = [];
-
-  for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
-    const slice = byteCharacters.slice(offset, offset + sliceSize);
-
-    const byteNumbers = new Array(slice.length);
-    for (let i = 0; i < slice.length; i++) {
-      byteNumbers[i] = slice.charCodeAt(i);
-    }
-
-    const byteArray = new Uint8Array(byteNumbers);
-    byteArrays.push(byteArray);
-  }
-
-  const blob = new Blob(byteArrays, {type: 'image/png'});
-  return blob;
-}
-
 function App() {
     const [loading, setLoading] = createSignal(false);
     const [downloading, setDownloading] = createSignal(false);
-    const [displayImg, setDisplayImg] =  createSignal<null|string>(null);
+    const [displayImg, setDisplayImg] =  createSignal<string>();
     let canvasRef: HTMLCanvasElement | undefined;
     let canvas: fabric.Canvas = new fabric.Canvas('canvas');
     let ksignature: fabric.Image = new fabric.Image("p");
@@ -119,13 +98,6 @@ function App() {
         }
     };
 
-    const downloadURI = async (uri: string, name: string) => {
-        setDownloading(true);
-        const blob = await fetch(uri).then(r => r.blob());
-        fileSaver(blob, name);
-        setLoading(false);
-    }
-
     const handleDownload = () => {
         setDownloading(true);
         setTimeout(async () => {
@@ -161,7 +133,7 @@ function App() {
                         <label class="btn btn-primary p-2" for="signature">Chọn chữ ký</label>
                         <input accept="image/*" class="d-none" id="signature" type="file" onChange={(e) => handSignatureChanged(e)} />
                     </span>
-                    <a href="#" disabled={downloading()} class="btn btn-primary p-2" onClick={handleDownload}>
+                    <a href="#" class="btn btn-primary p-2" onClick={handleDownload}>
                         <Show when={downloading()}>
                             <div style="height: 25px; width: 25px" class="spinner-border text-default" role="status">
                                 <span class="visually-hidden">Loading...</span>
@@ -173,7 +145,7 @@ function App() {
                     </a>
                 </div>
             </div>
-            <Show when={displayImg() !== null}>
+            <Show when={displayImg()}>
                 <div class="download-area">
                     <img src={displayImg()} alt="anh" aria-title="chuky.jpeg" />
                 </div>
