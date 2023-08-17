@@ -105,8 +105,13 @@ function App() {
                 format: "jpeg",
                 multiplier: kimage.width! / canvas.width!,
             });
-            const blob = await fetch(url).then(r => r.blob());
-            setDisplayImg(URL.createObjectURL(blob));
+            const form = new FormData();
+            form.append('image', url.split(",")[1]);
+            const uploaded = await fetch("https://api.imgbb.com/1/upload?expiration=600&key=3072d91b05e8a8bdfc2953f2a78f102e", {
+                method: "POST",
+                body: form,
+            }).then(r => r.json());
+            setDisplayImg(uploaded.data.url);
             setDownloading(false);
         }, 0);
     }
@@ -135,7 +140,7 @@ function App() {
                     </span>
                     <a href="#" class="btn btn-primary p-2" onClick={handleDownload}>
                         <Show when={downloading()}>
-                            <div style="height: 25px; width: 25px" class="spinner-border text-default" role="status">
+                            <div style="height: 20px; width: 20px" class="spinner-border text-default" role="status">
                                 <span class="visually-hidden">Loading...</span>
                             </div>
                         </Show>
